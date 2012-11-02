@@ -3,8 +3,7 @@
 # BuildVPN.sh | By: Mike Wright (@TheMightyShiv)
 ########################################################################################
 #
-# [Description]: Script to automate the installation and buildout of OpenVPN servers
-#                and clients.
+# [Description]: Script to automate the buildout of OpenVPN servers and clients.
 #
 ########################################################################################
 
@@ -17,20 +16,18 @@ ovpnsvr_cnf='/etc/openvpn/server.conf'
 
 # Title Function
 func_title(){
-
   # Clear (For Prettyness)
   clear
 
   # Print Title
   echo '=============================================================================='
-  echo ' BuildVPN 1.1.0 | By: Mike Wright (@TheMightyShiv) | Updated: 11.2.2012'
+  echo ' BuildVPN 1.1.1 | By: Mike Wright (@TheMightyShiv) | Updated: 11.02.2012'
   echo '=============================================================================='
   echo
 }
 
 # Server Install Function
 func_install(){
-
   # Install Packages Through Apt-Get
   apt-get -y install openvpn openssl
   echo
@@ -38,25 +35,25 @@ func_install(){
 
 # Server Buildout Function
 func_build_server(){
-
   # Get User Input
   echo '[ Supported Operating Systems ]'
   echo
   echo ' 1 = Debian (5/6/7)'
   echo ' 2 = Ubuntu (12.04)'
   echo
-  read -p 'Enter Operating System: ' os
+  read -p 'Enter Operating System..........................: ' os
   # Retry For People Who Don't Read Well
   if [ "${os}" != '1' ] && [ "${os}" != '2' ]
   then
     func_build_server
   fi
   read -p 'Enter Server Hostname...........................: ' host
-  read -p 'Enter IP OpenVPN Will Bind To...................: ' ip
+  read -p 'Enter IP OpenVPN Server Will Bind To............: ' ip
   read -p 'Enter Subnet For VPN (ex: 192.168.100.0)........: ' vpnnet
   read -p 'Enter Subnet Netmask (ex: 255.255.255.0)........: ' netmsk
   read -p 'Enter Preferred DNS Server (ex: 208.67.222.222).: ' dns
   read -p 'Enter Max Clients Threshold.....................: ' maxconn
+  read -p 'Router All Traffic Through This VPN (y/n).......: ' routeall
 
   # Build Certificate Authority
   func_title
@@ -68,9 +65,6 @@ func_build_server(){
   then
     echo '[*] Preparing Ubuntu Config File'
     cp openssl-1.0.0.cnf openssl.cnf
-  elif [ "${os}" != '1' ] && [ "${os}" != '2' ]
-  then
-    func_build_server
   fi
   echo '[*] Resetting Variables'
   . ./vars >> /dev/null
@@ -101,9 +95,11 @@ func_build_server(){
   echo "dh ${ovpnkey_dir}/dh1024.pem" >> ${ovpnsvr_cnf}
   echo "server ${vpnnet} ${netmsk}" >> ${ovpnsvr_cnf}
   echo 'ifconfig-pool-persist ipp.txt' >> ${ovpnsvr_cnf}
-  echo ';push "route 10.0.0.0 255.255.255.0"' >> ${ovpnsvr_cnf}
-  echo ';push "redirect-gateway def1"' >> ${ovpnsvr_cnf}
-  echo ";push "dhcp-option DNS ${dns}"" >> ${ovpnsvr_cnf}
+  if [[ "${routeall}" == [yY] ]]
+  then
+    echo 'push "redirect-gateway def1"' >> ${ovpnsvr_cnf}
+  fi
+  echo "push "dhcp-option DNS ${dns}"" >> ${ovpnsvr_cnf}
   echo 'keepalive 10 120' >> ${ovpnsvr_cnf}
   echo "tls-auth ${ovpnkey_dir}/ta.key 0" >> ${ovpnsvr_cnf}
   echo 'comp-lzo' >> ${ovpnsvr_cnf}
@@ -113,7 +109,7 @@ func_build_server(){
   echo 'persist-key' >> ${ovpnsvr_cnf}
   echo 'persist-tun' >> ${ovpnsvr_cnf}
   echo 'status openvpn-status.log' >> ${ovpnsvr_cnf}
-  echo ';log openvpn.log' >> ${ovpnsvr_cnf}
+  echo 'log openvpn.log' >> ${ovpnsvr_cnf}
   echo 'verb 3' >> ${ovpnsvr_cnf}
   echo 'mute 20' >> ${ovpnsvr_cnf}
 
@@ -125,16 +121,22 @@ func_build_server(){
 
 # Build Client Certificates Function
 func_build_client(){
-
   # Get User Input
   read -p 'Enter Username (No Spaces)......................: ' user
   read -p 'Enter IP/Hostname OpenVPN Server Binds To.......: ' ip
-  read -p 'Enter Node Name (Required For Windows Clients)..: ' node
+  read -p 'Will This Client Run Under Windows (y/n)........: ' windows
+
+  # Additional Configuration For Windows Clients
+  if [[ "${windows}" == [yY] ]]
+  then
+    read -p 'Enter Node Name (Required For Windows Clients)..: ' node
+  fi
 
   # Build Certificate
   func_title
   echo "[*] Generating Client Certificate For: ${user}"
   cd ${easyrsa_dir}
+  . ./vars
   ./build-key ${user}
 
   # Prepare Client Build Directory
@@ -148,13 +150,19 @@ func_build_client(){
   echo '[*] Creating Client Configuration'
   echo 'client' > ${user}/${user}.ovpn
   echo 'dev tun' >> ${user}/${user}.ovpn
-  echo "dev-node ${node}" >> ${user}/${user}.ovpn
+  if [[ "${windows}" == [yY] ]]
+  then
+    echo "dev-node ${node}" >> ${user}/${user}.ovpn
+  fi
   echo 'proto udp' >> ${user}/${user}.ovpn
   echo "remote ${ip} 1194" >> ${user}/${user}.ovpn
   echo 'resolv-retry infinite' >> ${user}/${user}.ovpn
   echo 'nobind' >> ${user}/${user}.ovpn
-  echo ';user nobody' >> ${user}/${user}.ovpn
-  echo ';group nobody' >> ${user}/${user}.ovpn
+  if [[ "${windows}" != [yY] ]]
+  then
+    echo 'user nobody' >> ${user}/${user}.ovpn
+    echo 'group nogroup' >> ${user}/${user}.ovpn
+  fi
   echo 'persist-key' >> ${user}/${user}.ovpn
   echo 'persist-tun' >> ${user}/${user}.ovpn
   echo 'mute-replay-warnings' >> ${user}/${user}.ovpn
@@ -181,22 +189,23 @@ func_build_client(){
   exit 0
 }
 
+# Select Function and Menu Statement
 func_title
-if [ "${1}" == '-i' ] || [ "${1}" == '--install' ]
-then
-  func_install
-elif [ "${1}" == '-s' ] || [ "${1}" == '--server' ]
-then
-  func_build_server
-elif [ "${1}" == '-c' ] || [ "${1}" == '--client' ]
-then
-  func_build_client
-else
-  echo ' Usage...: ./BuildVPN.sh [OPTION]'
-  echo ' Options.:'
-  echo '           -i | --install = Install OpenVPN Packages'
-  echo '           -s | --server  = Build Server Configuration'
-  echo '           -c | --client  = Build Client Configuration'
-  echo
-  exit 1
-fi
+case ${1} in
+  -i|--install)
+    func_install
+    ;;
+  -s|--server)
+    func_build_server
+    ;;
+  -c|--client)
+    func_build_client
+    ;;
+  *)
+    echo ' Usage...: ./BuildVPN.sh [OPTION]'
+    echo ' Options.:'
+    echo '           -i | --install = Install OpenVPN Packages'
+    echo '           -s | --server  = Build Server Configuration'
+    echo '           -c | --client  = Build Client Configuration'
+    echo
+esac

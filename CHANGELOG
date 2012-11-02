@@ -1,6 +1,15 @@
 [11/02/2012]
+     Released.: Version 1.1.1
+     Added....: Additional Checks for Windows Clients
+     Added....: Additional Checks for Linux Clients
+     Added....: Ability to Route All Traffic Through VPN
+     Modified.: Removed Unnecessary Code in OS Check Statement
+     Modified.: Converted Menu If Statement to Case Statement
+     Modified.: Cosmetics
+     Fixed....: Issue Creating Certificates on Ubuntu
+
+[11/02/2012]
      Released.: Version 1.1.0
      Added....: Compatibility With Ubuntu 12.04
      Added....: Ability to Specify Custom DNS
      Modified.: Cosmetics
-     License..: Released Under GPLv3
