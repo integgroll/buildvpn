@@ -21,7 +21,7 @@ func_title(){
 
   # Print Title
   echo '=============================================================================='
-  echo ' BuildVPN 1.1.1 | By: Mike Wright (@TheMightyShiv) | Updated: 11.02.2012'
+  echo ' BuildVPN 1.2.0 | By: Michael Wright (@TheMightyShiv) | Updated: 11.20.2012'
   echo '=============================================================================='
   echo
 }
@@ -45,6 +45,8 @@ func_build_server(){
   # Retry For People Who Don't Read Well
   if [ "${os}" != '1' ] && [ "${os}" != '2' ]
   then
+    clear
+    func_title
     func_build_server
   fi
   read -p 'Enter Server Hostname...........................: ' host
@@ -123,6 +125,7 @@ func_build_server(){
 func_build_client(){
   # Get User Input
   read -p 'Enter Username (No Spaces)......................: ' user
+  read -p 'Enter Name For Configuration File (No Spaces)...: ' confname
   read -p 'Enter IP/Hostname OpenVPN Server Binds To.......: ' ip
   read -p 'Will This Client Run Under Windows (y/n)........: ' windows
 
@@ -140,44 +143,50 @@ func_build_client(){
   ./build-key ${user}
 
   # Prepare Client Build Directory
-  cd ${ovpnkey_dir}
-  mkdir ${openvpn_dir}/${user}
-  cp ca.crt ta.key ${user}.crt ${user}.key ${openvpn_dir}/${user}
-  cd ${openvpn_dir}
+  cd ${openvpn_dir} && mkdir ${user}
 
   # Build Client Configuration
   func_title
   echo '[*] Creating Client Configuration'
-  echo 'client' > ${user}/${user}.ovpn
-  echo 'dev tun' >> ${user}/${user}.ovpn
+  echo 'client' > ${user}/${confname}.ovpn
+  echo 'dev tun' >> ${user}/${confname}.ovpn
   if [[ "${windows}" == [yY] ]]
   then
-    echo "dev-node ${node}" >> ${user}/${user}.ovpn
+    echo "dev-node ${node}" >> ${user}/${confname}.ovpn
   fi
-  echo 'proto udp' >> ${user}/${user}.ovpn
-  echo "remote ${ip} 1194" >> ${user}/${user}.ovpn
-  echo 'resolv-retry infinite' >> ${user}/${user}.ovpn
-  echo 'nobind' >> ${user}/${user}.ovpn
+  echo 'proto udp' >> ${user}/${confname}.ovpn
+  echo "remote ${ip} 1194" >> ${user}/${confname}.ovpn
+  echo 'resolv-retry infinite' >> ${user}/${confname}.ovpn
+  echo 'nobind' >> ${user}/${confname}.ovpn
   if [[ "${windows}" != [yY] ]]
   then
-    echo 'user nobody' >> ${user}/${user}.ovpn
-    echo 'group nogroup' >> ${user}/${user}.ovpn
+    echo 'user nobody' >> ${user}/${confname}.ovpn
+    echo 'group nogroup' >> ${user}/${confname}.ovpn
   fi
-  echo 'persist-key' >> ${user}/${user}.ovpn
-  echo 'persist-tun' >> ${user}/${user}.ovpn
-  echo 'mute-replay-warnings' >> ${user}/${user}.ovpn
-  echo 'ca ca.crt' >> ${user}/${user}.ovpn
-  echo "cert ${user}.crt" >> ${user}/${user}.ovpn
-  echo "key ${user}.key" >> ${user}/${user}.ovpn
-  echo 'ns-cert-type server' >> ${user}/${user}.ovpn
-  echo 'tls-auth ta.key 1' >> ${user}/${user}.ovpn
-  echo 'comp-lzo' >> ${user}/${user}.ovpn
-  echo 'verb 3' >> ${user}/${user}.ovpn
-  echo 'mute 20' >> ${user}/${user}.ovpn
+  echo 'persist-key' >> ${user}/${confname}.ovpn
+  echo 'persist-tun' >> ${user}/${confname}.ovpn
+  echo 'mute-replay-warnings' >> ${user}/${confname}.ovpn
+  echo '<ca>' >> ${user}/${confname}.ovpn
+  cat ${ovpnkey_dir}/ca.crt >> ${user}/${confname}.ovpn
+  echo '</ca>' >> ${user}/${confname}.ovpn
+  echo '<cert>' >> ${user}/${confname}.ovpn
+  cat ${ovpnkey_dir}/${user}.crt|awk '!/^ |Certificate:/'|sed '/^$/d' >> ${user}/${confname}.ovpn
+  echo '</cert>' >> ${user}/${confname}.ovpn
+  echo '<key>' >> ${user}/${confname}.ovpn
+  cat ${ovpnkey_dir}/${user}.key >> ${user}/${confname}.ovpn
+  echo '</key>' >> ${user}/${confname}.ovpn
+  echo 'ns-cert-type server' >> ${user}/${confname}.ovpn
+  echo 'key-direction 1' >> ${user}/${confname}.ovpn
+  echo '<tls-auth>' >> ${user}/${confname}.ovpn
+  cat ${ovpnkey_dir}/ta.key|awk '!/#/' >> ${user}/${confname}.ovpn
+  echo '</tls-auth>' >> ${user}/${confname}.ovpn
+  echo 'comp-lzo' >> ${user}/${confname}.ovpn
+  echo 'verb 3' >> ${user}/${confname}.ovpn
+  echo 'mute 20' >> ${user}/${confname}.ovpn
 
   # Build Client Tarball
   echo "[*] Creating ${user}.tar Configuration Package In: ${openvpn_dir}"
-  tar -cf ${user}.tar ${user}
+  tar -cf ${user}-${confname}.tar ${user}
 
   # Clean Up Temp Files
   echo '[*] Removing Temporary Files'
