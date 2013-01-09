@@ -1,3 +1,10 @@
+[01/09/2013]
+     Released.: Version 1.3.0
+     Added....: List Available IP Address During Configuration
+     Added....: Check Permissions Statement
+     Added....: README.md
+     Fixed....: Logging Issue in OpenVPN Server Config
+
 [11/20/2012]
      Released.: Version 1.2.0
      Added....: Single File Client Configuration Export

@@ -21,7 +21,7 @@ func_title(){
 
   # Print Title
   echo '=============================================================================='
-  echo ' BuildVPN 1.2.0 | By: Michael Wright (@TheMightyShiv) | Updated: 11.20.2012'
+  echo ' BuildVPN 1.3.0 | By: Michael Wright (@TheMightyShiv) | Updated: 01.09.2013'
   echo '=============================================================================='
   echo
 }
@@ -50,6 +50,12 @@ func_build_server(){
     func_build_server
   fi
   read -p 'Enter Server Hostname...........................: ' host
+  echo
+  echo '+------------------------+'
+  echo '| Available IP Addresses |'
+  echo '+------------------------+'
+  ifconfig |awk "/Link|inet/"|tr -s '[:space:]'|sed 's/ Link.*//g'|sed -e ':a;N;$!ba;s/\n inet//g' -e 's/addr://g'|cut -d" " -f 1,2|sed 's/ /\t/g'
+  echo
   read -p 'Enter IP OpenVPN Server Will Bind To............: ' ip
   read -p 'Enter Subnet For VPN (ex: 192.168.100.0)........: ' vpnnet
   read -p 'Enter Subnet Netmask (ex: 255.255.255.0)........: ' netmsk
@@ -110,8 +116,8 @@ func_build_server(){
   echo 'group nogroup' >> ${ovpnsvr_cnf}
   echo 'persist-key' >> ${ovpnsvr_cnf}
   echo 'persist-tun' >> ${ovpnsvr_cnf}
-  echo 'status openvpn-status.log' >> ${ovpnsvr_cnf}
-  echo 'log openvpn.log' >> ${ovpnsvr_cnf}
+  echo "status ${openvpn_dir}/status.log" >> ${ovpnsvr_cnf}
+  echo "log ${openvpn_dir}/openvpn.log" >> ${ovpnsvr_cnf}
   echo 'verb 3' >> ${ovpnsvr_cnf}
   echo 'mute 20' >> ${ovpnsvr_cnf}
 
@@ -126,6 +132,12 @@ func_build_client(){
   # Get User Input
   read -p 'Enter Username (No Spaces)......................: ' user
   read -p 'Enter Name For Configuration File (No Spaces)...: ' confname
+  echo
+  echo '+------------------------+'
+  echo '| Available IP Addresses |'
+  echo '+------------------------+'
+  ifconfig |awk "/Link|inet/"|tr -s '[:space:]'|sed 's/ Link.*//g'|sed -e ':a;N;$!ba;s/\n inet//g' -e 's/addr://g'|cut -d" " -f 1,2|sed 's/ /\t/g'
+  echo
   read -p 'Enter IP/Hostname OpenVPN Server Binds To.......: ' ip
   read -p 'Will This Client Run Under Windows (y/n)........: ' windows
 
@@ -197,6 +209,15 @@ func_build_client(){
   echo
   exit 0
 }
+
+# Check Permissions
+if [ `whoami` != 'root' ]
+then
+  func_title
+  echo '[ERROR]: You must run this script as root.'
+  echo
+  exit 1
+fi
 
 # Select Function and Menu Statement
 func_title
