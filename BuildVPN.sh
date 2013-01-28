@@ -1,6 +1,6 @@
 #!/bin/bash
 ########################################################################################
-# BuildVPN.sh | By: Mike Wright (@TheMightyShiv)
+# BuildVPN.sh | By: Michael Wright
 ########################################################################################
 #
 # [Description]: Script to automate the buildout of OpenVPN servers and clients.
@@ -21,7 +21,7 @@ func_title(){
 
   # Print Title
   echo '=============================================================================='
-  echo ' BuildVPN 1.3.0 | By: Michael Wright (@TheMightyShiv) | Updated: 01.09.2013'
+  echo ' BuildVPN 1.3.1 | By: Michael Wright | Updated: 01.28.2013'
   echo '=============================================================================='
   echo
 }
@@ -61,14 +61,14 @@ func_build_server(){
   read -p 'Enter Subnet Netmask (ex: 255.255.255.0)........: ' netmsk
   read -p 'Enter Preferred DNS Server (ex: 208.67.222.222).: ' dns
   read -p 'Enter Max Clients Threshold.....................: ' maxconn
-  read -p 'Router All Traffic Through This VPN (y/n).......: ' routeall
+  read -p 'Route All Traffic Through This VPN (y/n)........: ' routeall
 
   # Build Certificate Authority
   func_title
   echo '[*] Preparing Directories'
   cp -R ${easyrsa_tmp} ${easyrsa_dir}
   cd ${easyrsa_dir}
-  # Workaround For Ubuntu
+  # Workaround For Ubuntu 12.x
   if [ "${os}" == '2' ]
   then
     echo '[*] Preparing Ubuntu Config File'
