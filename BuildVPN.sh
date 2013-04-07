@@ -122,7 +122,7 @@ func_build_server(){
   echo 'mute 20' >> ${ovpnsvr_cnf}
   if [[ "${unique}" == [yY] ]]
   then
-    echo 'unique_subject no' >> ${ovpnsvr_cnf}
+    echo 'unique_subject = no' >> ${openvpn_dir}/easy-rsa/keys/index.txt.attr
   fi
   # Finish Message
   echo '[*] Server Buildout Complete'
