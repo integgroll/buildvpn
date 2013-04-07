@@ -62,7 +62,7 @@ func_build_server(){
   read -p 'Enter Preferred DNS Server (ex: 208.67.222.222).: ' dns
   read -p 'Enter Max Clients Threshold.....................: ' maxconn
   read -p 'Route All Traffic Through This VPN (y/n)........: ' routeall
-
+  read -p 'Allow Certificates With Same Subject (y/n)......: ' unique
   # Build Certificate Authority
   func_title
   echo '[*] Preparing Directories'
@@ -120,7 +120,10 @@ func_build_server(){
   echo "log ${openvpn_dir}/openvpn.log" >> ${ovpnsvr_cnf}
   echo 'verb 3' >> ${ovpnsvr_cnf}
   echo 'mute 20' >> ${ovpnsvr_cnf}
-
+  if [[ "${unique}" == [yY] ]]
+  then
+    echo 'unique_subject no' >> ${ovpnsvr_cnf}
+  fi
   # Finish Message
   echo '[*] Server Buildout Complete'
   echo
